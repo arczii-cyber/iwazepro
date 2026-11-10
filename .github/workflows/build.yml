@@ -1,0 +1,603 @@
+name: Build iwazePRO APK
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pobierz repozytorium
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Wygeneruj projekt i zbuduj APK v8.2
+        run: |
+          mkdir -p app/src/main/java/pl/itaxiwaze/bridge
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
+          mkdir -p app/src/main/res/xml
+          mkdir -p app/src/main/res/values
+
+          cat << 'EOF' > settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "iwazePRO"
+          include(":app")
+          EOF
+
+          cat << 'EOF' > app/build.gradle
+          plugins {
+              id 'com.android.application' version '8.7.2'
+          }
+          android {
+              namespace 'pl.itaxiwaze.bridge'
+              compileSdk 35
+              defaultConfig {
+                  applicationId "pl.itaxiwaze.bridge"
+                  minSdk 26
+                  targetSdk 35
+                  versionCode 43
+                  versionName "8.2"
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_background.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#1EA1F2" android:pathData="M0,0h108v108h-108z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#E5A922" android:pathData="M54,23 C45,27 36,27 31,34 C35,44 33,64 54,82 C75,64 73,44 77,34 C72,27 63,27 54,23 Z"/>
+              <path android:fillColor="#F9CA48" android:pathData="M54,26 C46,29 39,29 35,35 C38,44 36,62 54,78 C72,62 70,44 73,35 C69,29 62,29 54,26 Z"/>
+              <path android:fillColor="#232F38" android:pathData="M54,22 L73,77 L54,66 Z"/>
+              <path android:fillColor="#344450" android:pathData="M54,22 L54,66 L35,77 Z"/>
+              <path android:fillColor="#F9CA48" android:pathData="M37,37 H71 V51 H37 Z"/>
+              <path android:fillColor="#232F38" android:pathData="M38,39 H46 V41.5 H43.3 V49 H40.7 V41.5 H38 Z"/>
+              <path android:fillColor="#232F38" android:pathData="M46.5,49 L50,39 H52.8 L56.3,49 H53.6 L52.9,46.8 H49.9 L49.2,49 Z M50.5,44.6 H52.3 L51.4,41.6 Z"/>
+              <path android:fillColor="#232F38" android:pathData="M57,39 H59.8 L61.8,42.3 L63.8,39 H66.6 L63.3,43.9 L66.8,49 H64 L61.8,45.5 L59.6,49 H56.8 L60.3,43.9 Z"/>
+              <path android:fillColor="#232F38" android:pathData="M67.8,39 H70.4 V49 H67.8 Z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_background"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">iwazePRO</string>
+              <string name="accessibility_desc">Asystent kierowcy iwazePRO</string>
+          </resources>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/xml/accessibility_service_config.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+              android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewScrolled"
+              android:accessibilityFeedbackType="feedbackGeneric"
+              android:notificationTimeout="10"
+              android:canRetrieveWindowContent="true"
+              android:canPerformGestures="true"
+              android:packageNames="pl.itaxi.driver"
+              android:description="@string/accessibility_desc"
+              android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows" />
+          EOF
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <queries>
+                  <package android:name="com.waze" />
+                  <package android:name="pl.itaxi.driver" />
+                  <intent>
+                      <action android:name="android.intent.action.VIEW" />
+                      <data android:scheme="waze" />
+                  </intent>
+              </queries>
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher"
+                  android:label="iwazePRO"
+                  android:supportsRtl="true"
+                  android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <activity
+                      android:name=".RedirectActivity"
+                      android:exported="true"
+                      android:theme="@android:style/Theme.NoDisplay"
+                      android:excludeFromRecents="true"
+                      android:noHistory="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="google.navigation" />
+                      </intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="geo" />
+                      </intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="http" />
+                          <data android:scheme="https" />
+                          <data android:host="maps.google.com" />
+                          <data android:host="www.google.com" android:pathPrefix="/maps" />
+                      </intent-filter>
+                  </activity>
+                  <service
+                      android:name=".ItaxiAutomationService"
+                      android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.accessibilityservice.AccessibilityService" />
+                      </intent-filter>
+                      <meta-data
+                          android:name="android.accessibilityservice"
+                          android:resource="@xml/accessibility_service_config" />
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
+          cat << 'EOF' > app/src/main/java/pl/itaxiwaze/bridge/MainActivity.java
+          package pl.itaxiwaze.bridge;
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.graphics.Bitmap;
+          import android.graphics.BitmapFactory;
+          import android.graphics.Color;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.provider.Settings;
+          import android.util.TypedValue;
+          import android.view.Gravity;
+          import android.widget.Button;
+          import android.widget.CheckBox;
+          import android.widget.GridLayout;
+          import android.widget.LinearLayout;
+          import android.widget.RadioButton;
+          import android.widget.RadioGroup;
+          import android.widget.ScrollView;
+          import android.widget.TextView;
+          import android.widget.Toast;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.InputStream;
+          public class MainActivity extends Activity {
+              private static final int PICK_AVATAR_REQUEST = 901;
+              private Button btnToggleAuto;
+              private CheckBox cbBubbleEnabled;
+              private CheckBox cbTimeFilter;
+              private GridLayout timeGrid;
+              private Button[] slotButtons = new Button[8];
+              private TextView statusView, debugView, logView;
+              private int dp(int val) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, val, getResources().getDisplayMetrics()); }
+              @Override protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  ScrollView scroll = new ScrollView(this);
+                  scroll.setFitsSystemWindows(true);
+                  scroll.setBackgroundColor(Color.parseColor("#F5F7FA"));
+                  LinearLayout layout = new LinearLayout(this);
+                  layout.setOrientation(LinearLayout.VERTICAL);
+                  layout.setPadding(dp(16), dp(56), dp(16), dp(32));
+                  TextView title = new TextView(this);
+                  title.setText("iwazePRO (v8.2 Turbo)");
+                  title.setTextSize(22f);
+                  title.setTextColor(Color.parseColor("#111827"));
+                  title.setPadding(0, 0, 0, dp(14));
+                  layout.addView(title);
+                  SharedPreferences prefs = getSharedPreferences("bridge_logs", MODE_PRIVATE);
+                  btnToggleAuto = new Button(this);
+                  btnToggleAuto.setTextSize(16f);
+                  btnToggleAuto.setTextColor(Color.WHITE);
+                  btnToggleAuto.setGravity(Gravity.CENTER);
+                  btnToggleAuto.setPadding(dp(12), dp(18), dp(12), dp(18));
+                  updateToggleButtonStyle(prefs.getBoolean("auto_enabled", false));
+                  btnToggleAuto.setOnClickListener(v -> {
+                      boolean current = prefs.getBoolean("auto_enabled", false);
+                      boolean nextState = !current;
+                      SharedPreferences.Editor ed = prefs.edit().putBoolean("auto_enabled", nextState);
+                      if (nextState) { ed.remove("rejected_orders"); ed.putString("last_decision", "Automat włączony - gotowy"); }
+                      else { ed.putString("last_decision", "Automat wyłączony"); }
+                      ed.apply();
+                      ItaxiAutomationService.refreshBubbleFromUi();
+                      updateToggleButtonStyle(nextState);
+                      onResume();
+                  });
+                  layout.addView(btnToggleAuto);
+
+                  LinearLayout bubbleBox = new LinearLayout(this);
+                  bubbleBox.setOrientation(LinearLayout.VERTICAL);
+                  bubbleBox.setBackgroundColor(Color.parseColor("#DBEAFE"));
+                  bubbleBox.setPadding(dp(12), dp(10), dp(12), dp(10));
+                  LinearLayout.LayoutParams boxLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                  boxLp.setMargins(0, dp(12), 0, dp(4));
+                  bubbleBox.setLayoutParams(boxLp);
+                  cbBubbleEnabled = new CheckBox(this);
+                  cbBubbleEnabled.setText("Pływający dymek ON/OFF (Messenger)");
+                  cbBubbleEnabled.setTextSize(13.5f);
+                  cbBubbleEnabled.setTextColor(Color.parseColor("#1E3A8A"));
+                  cbBubbleEnabled.setChecked(prefs.getBoolean("bubble_enabled", true));
+                  cbBubbleEnabled.setOnCheckedChangeListener((b, isChecked) -> {
+                      prefs.edit().putBoolean("bubble_enabled", isChecked).apply();
+                      ItaxiAutomationService.refreshBubbleFromUi();
+                  });
+                  bubbleBox.addView(cbBubbleEnabled);
+
+                  LinearLayout avatarBtns = new LinearLayout(this);
+                  avatarBtns.setOrientation(LinearLayout.HORIZONTAL);
+                  Button btnPickPhoto = new Button(this);
+                  btnPickPhoto.setText("Własne zdjęcie z galerii");
+                  btnPickPhoto.setTextSize(11.5f);
+                  btnPickPhoto.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                  btnPickPhoto.setOnClickListener(v -> {
+                      Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
+                      pick.setType("image/*");
+                      startActivityForResult(Intent.createChooser(pick, "Wybierz zdjęcie"), PICK_AVATAR_REQUEST);
+                  });
+                  avatarBtns.addView(btnPickPhoto);
+                  Button btnResetPhoto = new Button(this);
+                  btnResetPhoto.setText("Domyślna kobieta");
+                  btnResetPhoto.setTextSize(11.5f);
+                  btnResetPhoto.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                  btnResetPhoto.setOnClickListener(v -> {
+                      File f = new File(getFilesDir(), "custom_avatar.png");
+                      if (f.exists()) f.delete();
+                      ItaxiAutomationService.reloadAvatarFromUi();
+                      Toast.makeText(this, "Przywrócono domyślne zdjęcie", Toast.LENGTH_SHORT).show();
+                  });
+                  avatarBtns.addView(btnResetPhoto);
+                  bubbleBox.addView(avatarBtns);
+                  layout.addView(bubbleBox);
+
+                  statusView = new TextView(this);
+                  statusView.setTextSize(14f);
+                  statusView.setTextColor(Color.parseColor("#111827"));
+                  statusView.setBackgroundColor(Color.parseColor("#E5E7EB"));
+                  statusView.setPadding(dp(12), dp(12), dp(12), dp(12));
+                  layout.addView(statusView);
+
+                  Button btnAccessibility = new Button(this);
+                  btnAccessibility.setText("0. Ustawienia Ułatwień Dostępu (Włącz usługę)");
+                  btnAccessibility.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
+                  layout.addView(btnAccessibility);
+
+                  scroll.addView(layout);
+                  setContentView(scroll);
+              }
+              @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode == PICK_AVATAR_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+                      try (InputStream is = getContentResolver().openInputStream(data.getData())) {
+                          Bitmap raw = BitmapFactory.decodeStream(is);
+                          if (raw != null) {
+                              int size = Math.min(raw.getWidth(), raw.getHeight());
+                              int x = (raw.getWidth() - size) / 2;
+                              int y = (raw.getHeight() - size) / 2;
+                              Bitmap square = Bitmap.createBitmap(raw, x, y, size, size);
+                              Bitmap scaled = Bitmap.createScaledBitmap(square, 240, 240, true);
+                              File out = new File(getFilesDir(), "custom_avatar.png");
+                              try (FileOutputStream fos = new FileOutputStream(out)) { scaled.compress(Bitmap.CompressFormat.PNG, 95, fos); }
+                              ItaxiAutomationService.reloadAvatarFromUi();
+                              Toast.makeText(this, "Zapisano nowe zdjęcie!", Toast.LENGTH_SHORT).show();
+                          }
+                      } catch (Exception ignored) {}
+                  }
+              }
+              private void updateToggleButtonStyle(boolean enabled) {
+                  if (enabled) {
+                      btnToggleAuto.setText("🟢 AUTOMAT ZLECEŃ: WŁĄCZONY\n(Kliknij, aby WYŁĄCZYĆ)");
+                      btnToggleAuto.setBackgroundColor(Color.parseColor("#15803D"));
+                  } else {
+                      btnToggleAuto.setText("🔴 AUTOMAT ZLECEŃ: WYŁĄCZONY\n(Kliknij, aby WŁĄCZYĆ)");
+                      btnToggleAuto.setBackgroundColor(Color.parseColor("#B91C1C"));
+                  }
+              }
+              @Override protected void onResume() {
+                  super.onResume();
+                  SharedPreferences prefs = getSharedPreferences("bridge_logs", MODE_PRIVATE);
+                  updateToggleButtonStyle(prefs.getBoolean("auto_enabled", false));
+                  statusView.setText("STATUS:\n" + prefs.getString("last_decision", "Oczekiwanie..."));
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/pl/itaxiwaze/bridge/RedirectActivity.java
+          package pl.itaxiwaze.bridge;
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Bundle;
+          public class RedirectActivity extends Activity {
+              @Override protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  Uri uri = getIntent() != null ? getIntent().getData() : null;
+                  if (uri != null) {
+                      Intent waze = new Intent(Intent.ACTION_VIEW, uri);
+                      waze.setPackage("com.waze");
+                      waze.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                      try { startActivity(waze); } catch (Exception ignored) {}
+                  }
+                  finish();
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/pl/itaxiwaze/bridge/ItaxiAutomationService.java
+          package pl.itaxiwaze.bridge;
+          import android.accessibilityservice.AccessibilityService;
+          import android.accessibilityservice.GestureDescription;
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.graphics.*;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.util.DisplayMetrics;
+          import android.util.TypedValue;
+          import android.view.*;
+          import android.view.accessibility.*;
+          import java.io.File;
+          import java.util.*;
+          import java.util.regex.*;
+
+          public class ItaxiAutomationService extends AccessibilityService {
+              private static final String ITAXI_PACKAGE = "pl.itaxi.driver";
+              private static final String OWN_PACKAGE = "pl.itaxiwaze.bridge";
+              private static ItaxiAutomationService instance;
+
+              private long lastClick = 0;
+              private final Handler handler = new Handler(Looper.getMainLooper());
+              private final Runnable scanner = this::scanActiveWindow;
+              private WindowManager wm;
+              private ChatHeadView bubble;
+              private WindowManager.LayoutParams bubbleParams;
+              private Bitmap customAvatar = null;
+              private final Random rand = new Random();
+
+              public static void refreshBubbleFromUi() {
+                  if (instance != null) instance.handler.post(instance::updateBubbleState);
+              }
+              public static void reloadAvatarFromUi() {
+                  if (instance != null) {
+                      instance.loadAvatar();
+                      instance.handler.post(() -> { if (instance.bubble != null) instance.bubble.invalidate(); });
+                  }
+              }
+              @Override protected void onServiceConnected() {
+                  super.onServiceConnected();
+                  instance = this;
+                  loadAvatar();
+                  setupBubble();
+              }
+              private void loadAvatar() {
+                  try {
+                      File f = new File(getFilesDir(), "custom_avatar.png");
+                      if (f.exists()) {
+                          Bitmap raw = BitmapFactory.decodeFile(f.getAbsolutePath());
+                          if (raw != null) { customAvatar = makeCircle(raw); return; }
+                      }
+                  } catch (Exception ignored) {}
+                  customAvatar = null;
+              }
+              private Bitmap makeCircle(Bitmap src) {
+                  int size = Math.min(src.getWidth(), src.getHeight());
+                  Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                  Canvas canvas = new Canvas(output);
+                  Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  canvas.drawCircle(size/2f, size/2f, size/2f, paint);
+                  paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                  canvas.drawBitmap(src, new Rect(0,0,src.getWidth(),src.getHeight()), new Rect(0,0,size,size), paint);
+                  return output;
+              }
+              private int dp(int val) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, val, getResources().getDisplayMetrics()); }
+
+              private void setupBubble() {
+                  try {
+                      wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+                      if (wm == null) return;
+                      int size = dp(62);
+                      DisplayMetrics dm = getResources().getDisplayMetrics();
+                      bubbleParams = new WindowManager.LayoutParams(size, size, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN, PixelFormat.TRANSLUCENT);
+                      bubbleParams.gravity = Gravity.TOP | Gravity.START;
+                      bubbleParams.x = dm.widthPixels - size - dp(6);
+                      bubbleParams.y = (int)(dm.heightPixels * 0.32f);
+                      bubble = new ChatHeadView(this);
+                      updateBubbleState();
+                  } catch (Exception ignored) {}
+              }
+              private void updateBubbleState() {
+                  if (wm == null || bubble == null) return;
+                  try {
+                      boolean show = getSharedPreferences("bridge_logs", MODE_PRIVATE).getBoolean("bubble_enabled", true);
+                      if (show) {
+                          if (bubble.getParent() == null) wm.addView(bubble, bubbleParams);
+                          bubble.invalidate();
+                      } else {
+                          if (bubble.getParent() != null) wm.removeView(bubble);
+                      }
+                  } catch (Exception ignored) {}
+              }
+              private void toggleAuto() {
+                  SharedPreferences prefs = getSharedPreferences("bridge_logs", MODE_PRIVATE);
+                  boolean next = !prefs.getBoolean("auto_enabled", false);
+                  prefs.edit().putBoolean("auto_enabled", next).putString("last_decision", next ? "Włączono z dymka" : "Wyłączono z dymka").apply();
+                  if (bubble != null) { bubble.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); bubble.invalidate(); }
+                  if (next) handler.postDelayed(scanner, 15);
+              }
+
+              private class ChatHeadView extends View {
+                  private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private float startX, startY;
+                  private int winX, winY;
+                  private boolean dragging = false;
+                  public ChatHeadView(Context ctx) { super(ctx); }
+                  @Override protected void onDraw(Canvas canvas) {
+                      super.onDraw(canvas);
+                      boolean on = getSharedPreferences("bridge_logs", MODE_PRIVATE).getBoolean("auto_enabled", false);
+                      float w = getWidth(), h = getHeight(), cx = w*0.48f, cy = h*0.48f, r = Math.min(w,h)*0.42f;
+                      p.setColor(Color.argb(65,0,0,0));
+                      canvas.drawCircle(cx, cy+dp(2), r+dp(1), p);
+                      if (customAvatar != null) {
+                          canvas.drawBitmap(customAvatar, null, new RectF(cx-r, cy-r, cx+r, cy+r), p);
+                      } else {
+                          p.setShader(new LinearGradient(cx-r, cy-r, cx+r, cy+r, Color.rgb(96,165,250), Color.rgb(244,114,182), Shader.TileMode.CLAMP));
+                          canvas.drawCircle(cx, cy, r, p);
+                          p.setShader(null);
+                      }
+                      p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(2)); p.setColor(on ? Color.WHITE : Color.rgb(209,213,219));
+                      canvas.drawCircle(cx, cy, r, p);
+                      p.setStyle(Paint.Style.FILL); p.setColor(Color.WHITE);
+                      canvas.drawCircle(cx+r*0.70f, cy+r*0.70f, r*0.27f+dp(2), p);
+                      p.setColor(on ? Color.parseColor("#31A24C") : Color.parseColor("#6B7280"));
+                      canvas.drawCircle(cx+r*0.70f, cy+r*0.70f, r*0.27f, p);
+                  }
+                  @Override public boolean onTouchEvent(MotionEvent e) {
+                      if (bubbleParams == null || wm == null) return false;
+                      DisplayMetrics dm = getResources().getDisplayMetrics();
+                      switch (e.getActionMasked()) {
+                          case MotionEvent.ACTION_DOWN:
+                              startX = e.getRawX(); startY = e.getRawY();
+                              winX = bubbleParams.x; winY = bubbleParams.y;
+                              dragging = false; return true;
+                          case MotionEvent.ACTION_MOVE:
+                              if (Math.hypot(e.getRawX()-startX, e.getRawY()-startY) > dp(8)) dragging = true;
+                              if (dragging) {
+                                  bubbleParams.x = Math.max(0, Math.min(dm.widthPixels-getWidth(), (int)(winX + (e.getRawX()-startX))));
+                                  bubbleParams.y = Math.max(dp(24), Math.min(dm.heightPixels-getHeight()-dp(24), (int)(winY + (e.getRawY()-startY))));
+                                  try { wm.updateViewLayout(this, bubbleParams); } catch (Exception ignored) {}
+                              }
+                              return true;
+                          case MotionEvent.ACTION_UP:
+                          case MotionEvent.ACTION_CANCEL:
+                              if (!dragging) toggleAuto();
+                              else {
+                                  bubbleParams.x = (bubbleParams.x + getWidth()/2 < dm.widthPixels/2) ? dp(4) : (dm.widthPixels - getWidth() - dp(4));
+                                  try { wm.updateViewLayout(this, bubbleParams); } catch (Exception ignored) {}
+                              }
+                              return true;
+                      }
+                      return false;
+                  }
+              }
+
+              @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+                  if (event == null || event.getPackageName() == null) return;
+                  if (event.getPackageName().toString().equals(ITAXI_PACKAGE)) scanActiveWindow();
+              }
+
+              private void scanActiveWindow() {
+                  SharedPreferences prefs = getSharedPreferences("bridge_logs", MODE_PRIVATE);
+                  if (!prefs.getBoolean("auto_enabled", false)) return;
+                  AccessibilityNodeInfo root = getRootInActiveWindow();
+                  if (root == null) return;
+
+                  List<AccessibilityNodeInfo> nodes = new ArrayList<>();
+                  StringBuilder sb = new StringBuilder();
+                  collect(root, nodes, sb);
+                  String text = sb.toString();
+
+                  long now = System.currentTimeMillis();
+                  if (now - lastClick > 120 && (text.contains("Zapisz się") || text.contains("Rozpocznij") || text.contains("Przyjmij") || text.contains("Potwierdzenie"))) {
+                      for (AccessibilityNodeInfo n : nodes) {
+                          String t = n.getText() != null ? n.getText().toString() : "";
+                          String cd = n.getContentDescription() != null ? n.getContentDescription().toString() : "";
+                          String combined = (t + " " + cd).toLowerCase();
+                          if (combined.contains("zapisz") || combined.contains("rozpocznij") || combined.contains("przyjmij") || combined.contains("potwierdź") || combined.contains("tak")) {
+                              Rect r = new Rect(); n.getBoundsInScreen(r);
+                              if (r.width() > 0 && r.height() > 0) {
+                                  lastClick = now;
+                                  Path path = new Path();
+                                  path.moveTo(r.centerX() + rand.nextInt(10)-5, r.centerY() + rand.nextInt(10)-5);
+                                  GestureDescription.Builder b = new GestureDescription.Builder();
+                                  b.addStroke(new GestureDescription.StrokeDescription(path, 0, 18));
+                                  dispatchGesture(b.build(), null, null);
+                                  break;
+                              }
+                          }
+                      }
+                  }
+                  root.recycle();
+              }
+
+              private void collect(AccessibilityNodeInfo node, List<AccessibilityNodeInfo> list, StringBuilder sb) {
+                  if (node == null || list.size() > 150) return;
+                  list.add(node);
+                  if (node.getText() != null) sb.append(node.getText()).append(" ");
+                  for (int i = 0; i < node.getChildCount(); i++) {
+                      AccessibilityNodeInfo child = node.getChild(i);
+                      if (child != null) collect(child, list, sb);
+                  }
+              }
+
+              @Override public void onDestroy() {
+                  super.onDestroy();
+                  if (wm != null && bubble != null && bubble.getParent() != null) {
+                      try { wm.removeView(bubble); } catch (Exception ignored) {}
+                  }
+                  instance = null;
+              }
+              @Override public void onInterrupt() {}
+          }
+          EOF
+
+      - name: Buduj aplikację Gradle
+        run: ./gradlew assembleDebug
+
+      - name: Przekaż plik APK jako Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: iwazePRO-v8.2-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
